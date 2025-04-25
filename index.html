@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Preferences</title>
+  <style>
+    body {
+      transition: background-color 0.3s, color 0.3s, font-size 0.3s;
+      padding: 20px;
+      font-family: Arial;
+    }
+    select, input[type="range"], input[type="text"], button {
+      margin: 5px;
+      padding: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 id="greeting">Welcome!</h1>
+
+  <button onclick="toggleTheme()">Toggle Theme</button><br><br>
+
+  <label for="fontSize">Font Size:</label>
+  <input type="range" id="fontSize" min="12" max="30"><br>
+
+  <label for="fontUnit">Font Unit:</label>
+  <select id="fontUnit">
+    <option value="px">px</option>
+    <option value="em">em</option>
+    <option value="rem">rem</option>
+  </select><br><br>
+
+  <button onclick="toggleLanguage()">Toggle Language</button><br><br>
+
+  <input type="text" id="profileName" placeholder="Enter profile name">
+  <button onclick="saveProfile()">Save Profile</button><br>
+
+  <select id="profileSelect"></select>
+  <button onclick="loadProfile()">Load Profile</button>
+  <button onclick="deleteProfile()">Delete Profile</button><br><br>
+
+  <button onclick="exportPreferences()">Export Preferences</button>
+
+  <script>
+    const content = {
+      en: "Welcome!",
+      es: "¡Bienvenido!"
+    };
+
+    function getCurrentPrefs() {
+      return {
+        theme: localStorage.getItem("theme") || "light",
+        fontSize: localStorage.getItem("fontSize") || "16",
+        fontUnit: localStorage.getItem("fontUnit") || "px",
+        language: localStorage.getItem("language") || "en"
+      };
+    }
+
+    function saveCurrentPrefs(prefs) {
+      localStorage.setItem("theme", prefs.theme);
+      localStorage.setItem("fontSize", prefs.fontSize);
+      localStorage.setItem("fontUnit", prefs.fontUnit);
+      localStorage.setItem("language", prefs.language);
+    }
+
+    function applyPreferences(prefs) {
+      document.body.style.backgroundColor = prefs.theme === "dark" ? "#333" : "#fff";
+      document.body.style.color = prefs.theme === "dark" ? "#fff" : "#000";
+      document.body.style.fontSize = prefs.fontSize + prefs.fontUnit;
+      document.getElementById("greeting").textContent = content[prefs.language];
+    }
+
+    function toggleTheme() {
+      const prefs = getCurrentPrefs();
+      prefs.theme = prefs.theme === "dark" ? "light" : "dark";
+      saveCurrentPrefs(prefs);
+      applyPreferences(prefs);
+    }
+
+    function toggleLanguage() {
+      const prefs = getCurrentPrefs();
+      prefs.language = prefs.language === "en" ? "es" : "en";
+      saveCurrentPrefs(prefs);
+      applyPreferences(prefs);
+    }
+
+    document.getElementById("fontSize").addEventListener("input", (e) => {
+      const prefs = getCurrentPrefs();
+      prefs.fontSize = e.target.value;
+      saveCurrentPrefs(prefs);
+      applyPreferences(prefs);
+    });
+
+    document.getElementById("fontUnit").addEventListener("change", (e) => {
+      const prefs = getCurrentPrefs();
+      prefs.fontUnit = e.target.value;
+      saveCurrentPrefs(prefs);
+      applyPreferences(prefs);
+    });
+
+    function saveProfile() {
+      const name = document.getElementById("profileName").value.trim();
+      if (!name) return alert("Enter a valid profile name.");
+      const prefs = getCurrentPrefs();
+      localStorage.setItem(`profile_${name}`, JSON.stringify(prefs));
+      updateProfileDropdown();
+      alert(`Profile "${name}" saved!`);
+    }
+
+    function loadProfile() {
+      const name = document.getElementById("profileSelect").value;
+      if (!name) return alert("Select a profile to load.");
+      const prefs = JSON.parse(localStorage.getItem(`profile_${name}`));
+      saveCurrentPrefs(prefs);
+      applyPreferences(prefs);
+
+      // 🔧 Sync UI inputs
+      document.getElementById("fontSize").value = prefs.fontSize;
+      document.getElementById("fontUnit").value = prefs.fontUnit;
+    }
+
+    function deleteProfile() {
+      const name = document.getElementById("profileSelect").value;
+      if (!name) return alert("Select a profile to delete.");
+      const confirmDelete = confirm(`Delete profile "${name}"?`);
+      if (!confirmDelete) return;
+      localStorage.removeItem(`profile_${name}`);
+      updateProfileDropdown();
+      alert(`Profile "${name}" deleted.`);
+    }
+
+    function exportPreferences() {
+      if (!confirm("Export current preferences?")) return;
+      const prefs = getCurrentPrefs();
+      const data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(prefs));
+      const link = document.createElement("a");
+      link.setAttribute("href", data);
+      link.setAttribute("download", "preferences.json");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    function updateProfileDropdown() {
+      const dropdown = document.getElementById("profileSelect");
+      dropdown.innerHTML = "";
+      for (let key in localStorage) {
+        if (key.startsWith("profile_")) {
+          const option = document.createElement("option");
+          option.value = key.replace("profile_", "");
+          option.textContent = key.replace("profile_", "");
+          dropdown.appendChild(option);
+        }
+      }
+    }
+
+    function init() {
+      const prefs = getCurrentPrefs();
+      applyPreferences(prefs);
+      document.getElementById("fontSize").value = prefs.fontSize;
+      document.getElementById("fontUnit").value = prefs.fontUnit;
+      updateProfileDropdown();
+    }
+
+    init();
+  </script>
+</body>
+</html>
